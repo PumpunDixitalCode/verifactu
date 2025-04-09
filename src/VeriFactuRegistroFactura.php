@@ -35,6 +35,7 @@ class VeriFactuRegistroFactura
         } catch(\Exception $e) {
             $ret['status'] = 'fail';
             $ret['response'] = $e->getMessage();
+            return $ret;
         }
 //        print_r($dsRegistroVeriFactuAsArray);exit;
         $ret['hashes'] = [];
