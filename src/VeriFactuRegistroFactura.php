@@ -76,19 +76,21 @@ class VeriFactuRegistroFactura
             'style' => SOAP_DOCUMENT,
             'use' => SOAP_LITERAL
         ];
-
-//      $client = new SoapClientDebugger($this->wsdl, $options);
-        $client = new \SoapClient($this->wsdl, $options);
+        
         try {
+            // $client = new SoapClientDebugger($this->wsdl, $options);
+            $client = new \SoapClient($this->wsdl, $options);
             $client->__setLocation($this->location);
             $client->__soapCall('RegFactuSistemaFacturacion', [$dsRegistroVeriFactuAsArray]);
             $ret['request'] = $client->__getLastRequest();
             $ret['response'] = $client->__getLastResponse();
             $ret['status'] = 'sent';
         } catch (\SoapFault $e) {
-            $ret['request'] = $client->__getLastRequest();
-            $lastResponse = $client->__getLastResponse();
-            if ( strpos($lastResponse, 'No se detecta certificado electr')!==false ) {
+            if (isset($client)) {
+                $ret['request'] = $client->__getLastRequest();
+                $lastResponse = $client->__getLastResponse();
+            }
+            if (isset($lastResponse) && strpos($lastResponse, 'No se detecta certificado electr')!==false ) {
                 $ret['response'] = 'No se detecta certificado electrónico';
             } else {
                 $ret['response'] = $e->getMessage();
