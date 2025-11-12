@@ -14,7 +14,7 @@ class Destinatario
     public ?string $NIF = null;
     public ?IDOtro $IDOtro = null;
 
-    public function __construct(string $nif, ?string $nombreRazon=null, ?IDOtro $idOtro=null)
+    public function __construct(?string $nif, ?string $nombreRazon=null, ?IDOtro $idOtro=null)
     {
         $this->NIF = $nif;
         $this->NombreRazon = $nombreRazon;
@@ -26,7 +26,7 @@ class Destinatario
             'NombreRazon' => VeriFactuStringHelper::sanitizeString($this->NombreRazon)
         ];
         if (($this->NIF==null && $this->IDOtro==null) || ($this->NIF!=null && $this->IDOtro!=null)) {
-            throw new \Exception('Desinatario requiere NIF ó IDOtro.');
+            throw new \Exception('Destinatario requiere NIF ó IDOtro.');
         }
         if ($this->NIF!=null) {
             $data['NIF'] = $this->NIF;
