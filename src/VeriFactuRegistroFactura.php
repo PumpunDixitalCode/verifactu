@@ -2,19 +2,16 @@
 
 namespace jdgOpenCode\verifactu;
 
-use jdgOpenCode\verifactu\VeriFactuDateTimeHelper;
-use jdgOpenCode\verifactu\VeriFactuStringHelper;
-use jdgOpenCode\verifactu\Listas;
-use jdgOpenCode\verifactu\Models;
-
 class VeriFactuRegistroFactura
 {
     private $wsdl;
     private $schemaBaseUrl;
     private $location;
+    private $production;
 
     public function __construct($production = false)
     {
+        $this->production = $production;
         if ($production) {
             $this->wsdl = 'https://prewww2.aeat.es/static_files/common/internet/dep/aplicaciones/es/aeat/tikeV1.0/cont/ws/SistemaFacturacion.wsdl';
             $this->schemaBaseUrl = 'https://www1.agenciatributaria.gob.es/wlpl/TIKE-CONT/ws/SistemaFacturacion/VerifactuSOAP';
@@ -46,16 +43,16 @@ class VeriFactuRegistroFactura
                     'Huella' => $registroFactura['RegistroAlta']['Huella'],
                     'FechaHoraHusoGenRegistro' => $registroFactura['RegistroAlta']['FechaHoraHusoGenRegistro']
                 ];
-            } else 
-            if (isset($registroFactura['RegistroAnulacion'])) {
-                $ret['hashes'][] = [
-                    'NumSerieFactura' => $registroFactura['RegistroAnulacion']['IDFactura']['NumSerieFactura'],
-                    'Huella' => $registroFactura['RegistroAnulacion']['Huella'],
-                    'FechaHoraHusoGenRegistro' => $registroFactura['RegistroAnulacion']['FechaHoraHusoGenRegistro']
-                ];
-            } else {
-                throw new \Exception('The data contains a non valid "RegistroFactura" type.');
-            }
+            } else
+                if (isset($registroFactura['RegistroAnulacion'])) {
+                    $ret['hashes'][] = [
+                        'NumSerieFactura' => $registroFactura['RegistroAnulacion']['IDFactura']['NumSerieFactura'],
+                        'Huella' => $registroFactura['RegistroAnulacion']['Huella'],
+                        'FechaHoraHusoGenRegistro' => $registroFactura['RegistroAnulacion']['FechaHoraHusoGenRegistro']
+                    ];
+                } else {
+                    throw new \Exception('The data contains a non valid "RegistroFactura" type.');
+                }
         }
 
         $options = [
@@ -76,32 +73,40 @@ class VeriFactuRegistroFactura
             'style' => SOAP_DOCUMENT,
             'use' => SOAP_LITERAL
         ];
-        
+
         try {
             // $client = new SoapClientDebugger($this->wsdl, $options);
             $client = new \SoapClient($this->wsdl, $options);
             $client->__setLocation($this->location);
             $client->__soapCall('RegFactuSistemaFacturacion', [$dsRegistroVeriFactuAsArray]);
-            $ret['request'] = $client->__getLastRequest();
-            $ret['response'] = $client->__getLastResponse();
-            $ret['status'] = self::checkResponse($ret['response']);
+            $request = $client->__getLastRequest();
+            $response = $client->__getLastResponse();
+            if (!$this->production) {
+                $ret['request'] = $request;
+                $ret['response'] = $response;
+            }
+            $ret['status'] = self::checkResponse($response);
         } catch (\SoapFault $e) {
             if (isset($client)) {
-                $ret['request'] = $client->__getLastRequest();
-                $lastResponse = $client->__getLastResponse();
+                $request = $client->__getLastRequest();
+                $response = $client->__getLastResponse();
+                if (!$this->production) {
+                    $ret['request'] = $request;
+                    $ret['response'] = $response;
+                }
+                $ret['status'] = self::checkResponse($response, $e);
             }
-            if (isset($lastResponse) && strpos($lastResponse, 'No se detecta certificado electr') !== false) {
-                $ret['response'] = 'No se detecta certificado electrónico';
-            } else {
-                $ret['response'] = $e->getMessage();
-            }
-            $ret['status'] = 'fail';
         }
         return $ret;
     }
 
-    public static function checkResponse($xmlString)
+    public static function checkResponse($xmlString, \Exception $e = null)
     {
+        if (isset($e)) {
+            $error = self::processException($e);
+            $error["error"] = true;
+            return $error;
+        }
         try {
             libxml_use_internal_errors(true);
             $xml = simplexml_load_string($xmlString);
@@ -109,7 +114,7 @@ class VeriFactuRegistroFactura
                 return [
                     "error" => true,
                     "codigo" => 4103,
-                    "mensaje" => "XML inválido"
+                    "mensaje" => "Se ha producido un error inesperado al parsear el XML."
                 ];
             }
             $namespaces = $xml->getNamespaces(true);
@@ -139,6 +144,30 @@ class VeriFactuRegistroFactura
             "codigo" => null,
             "mensaje" => null
         ];
+    }
+
+    /**
+     * Process the error string, extracting the error code and message, and throws an exception.
+     *
+     * This method uses a regular expression to parse the provided error string. If the string matches
+     * the expected format ("Codigo[<code>].<error_message>"), it throws an ApiException with the error code
+     * and message. If the format doesn't match, it throws an ApiException with the full error string.
+     *
+     * @param \Exception $e The error to be processed. Expected format: "Codigo[<code>].<error_message>".
+     */
+    private static function processException(\Exception $e): array
+    {
+        // Regular expression to extract the code and error message
+        preg_match('/Codigo\[(\d+)\]\.(.*)/', $e, $matches);
+
+        // Verify if a match was found
+        if (!empty($matches)) {
+            $code = $matches[1]; // The code
+            $error = $matches[2]; // The error message
+            return ["message" => $error, "codigo" => (int)$code];
+        } else {
+            return ["message" => $e->getMessage(), "codigo" => 9999];
+        }
     }
     /*
 https://sede.agenciatributaria.gob.es/Sede/iva/sistemas-informaticos-facturacion-verifactu/informacion-tecnica.html
