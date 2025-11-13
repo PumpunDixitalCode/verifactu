@@ -84,7 +84,7 @@ class VeriFactuRegistroFactura
             $client->__soapCall('RegFactuSistemaFacturacion', [$dsRegistroVeriFactuAsArray]);
             $ret['request'] = $client->__getLastRequest();
             $ret['response'] = $client->__getLastResponse();
-            $ret['status'] = 'sent';
+            $ret['status'] = self::checkResponse($ret['response']);
         } catch (\SoapFault $e) {
             if (isset($client)) {
                 $ret['request'] = $client->__getLastRequest();
@@ -106,7 +106,11 @@ class VeriFactuRegistroFactura
             libxml_use_internal_errors(true);
             $xml = simplexml_load_string($xmlString);
             if ($xml === false) {
-                return ["error" => true, "mensaje" => "XML inválido"];
+                return [
+                    "error" => true,
+                    "codigo" => 4103,
+                    "mensaje" => "XML inválido"
+                ];
             }
             $namespaces = $xml->getNamespaces(true);
             $body = $xml->children($namespaces['env'])->Body;
@@ -114,17 +118,27 @@ class VeriFactuRegistroFactura
             $estadoEnvio = (string)$respuesta->children($namespaces['tikR'])->EstadoEnvio;
             if ($estadoEnvio === "Incorrecto") {
                 $respuestaLinea = $respuesta->children($namespaces['tikR'])->RespuestaLinea;
+                $codigoErrorRegistro = (string)$respuestaLinea->children($namespaces['tikR'])->CodigoErrorRegistro;
                 $descripcionError = (string)$respuestaLinea->children($namespaces['tikR'])->DescripcionErrorRegistro;
 
                 return [
                     "error" => true,
+                    "codigo" => $codigoErrorRegistro,
                     "mensaje" => $descripcionError
                 ];
             }
         } catch (\Exception $ex) {
-            return ["error" => true, "mensaje" => $ex->getMessage()];
+            return [
+                "error" => true,
+                "codigo" => 4103,
+                "mensaje" => $ex->getMessage()
+            ];
         }
-        return ["error" => false, "mensaje" => null];
+        return [
+            "error" => false,
+            "codigo" => null,
+            "mensaje" => null
+        ];
     }
     /*
 https://sede.agenciatributaria.gob.es/Sede/iva/sistemas-informaticos-facturacion-verifactu/informacion-tecnica.html
@@ -140,6 +154,7 @@ https://prewww2.aeat.es/static_files/common/internet/dep/aplicaciones/es/aeat/ti
               - Tras corregir el nombre_razon, el envio se realizó correctamente (pero con errores).
 [respose]  => <tikR:CodigoErrorRegistro>1110</tikR:CodigoErrorRegistro><tikR:DescripcionErrorRegistro>Error en el bloque Destinatario.. El NIF no está identificado en el censo de la AEAT.. NIF:11111111H. NOMBRE_RAZON:Test customer.
               - El NIF y nombre son inventados XD, tengo que buscar uno real.
+[response] => Codigo[4103].Se ha producido un error inesperado al parsear el XML.
 
 */
 }
