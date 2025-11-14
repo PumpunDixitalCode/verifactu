@@ -46,9 +46,9 @@ class VeriFactuRegistroFactura
             } else
                 if (isset($registroFactura['RegistroAnulacion'])) {
                     $ret['hashes'][] = [
-                        'NumSerieFactura' => $registroFactura['RegistroAnulacion']['IDFactura']['NumSerieFactura'],
+                        'NumSerieFacturaAnulada' => $registroFactura['RegistroAnulacion']['IDFactura']['NumSerieFacturaAnulada'],
                         'Huella' => $registroFactura['RegistroAnulacion']['Huella'],
-                        'FechaHoraHusoGenRegistro' => $registroFactura['RegistroAnulacion']['FechaHoraHusoGenRegistro']
+                        'FechaHoraHusoGenRegistro' => $registroFactura['RegistroAnulacion']['FechaExpedicionFacturaAnulada']
                     ];
                 } else {
                     throw new \Exception('The data contains a non valid "RegistroFactura" type.');
