@@ -36,6 +36,7 @@ class RegistroAnulacion
         $data['Encadenamiento'] =  $this->Encadenamiento->toArray();
         $data['SistemaInformatico'] =  $this->SistemaInformatico->toArray();
         $data['TipoHuella'] =  $this->TipoHuella->value;
+        $this->FechaHoraHusoGenRegistro = VeriFactuDateTimeHelper::nowIso8601();
         $invoiceData = [
             'IDEmisorFacturaAnulada' => $this->IDFactura->IDEmisorFactura,
             'NumSerieFacturaAnulada' => $this->IDFactura->NumSerieFactura,
