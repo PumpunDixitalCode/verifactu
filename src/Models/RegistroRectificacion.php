@@ -4,13 +4,13 @@ use jdgOpenCode\verifactu\Listas;
 use jdgOpenCode\verifactu\VeriFactuDateTimeHelper;
 use jdgOpenCode\verifactu\VeriFactuHashGenerator;
 
-class RegistroAnulacion
+class RegistroRectificacion
 {
     /**
      * Identificación de la versión actual del esquema o estructura de información utilizada para la generación y conservación / remisión de los registros de facturación. Este campo forma parte del detalle de las circunstancias de generación de los registros de facturación.
      */
     public Listas\L15 $IDVersion;
-    public IDFacturaAnulada $IDFactura;
+    public IDFacturaRectificada $IDFactura;
 
     public Encadenamiento $Encadenamiento;
     public SistemaInformatico $SistemaInformatico;
@@ -38,9 +38,9 @@ class RegistroAnulacion
         $data['TipoHuella'] =  $this->TipoHuella->value;
         $this->FechaHoraHusoGenRegistro = VeriFactuDateTimeHelper::nowIso8601();
         $invoiceData = [
-            'IDEmisorFacturaAnulada' => $this->IDFactura->IDEmisorFactura,
-            'NumSerieFacturaAnulada' => $this->IDFactura->NumSerieFactura,
-            'FechaExpedicionFacturaAnulada' => VeriFactuDateTimeHelper::formatDate($this->IDFactura->FechaExpedicionFactura),
+            'IDEmisorFactura' => $this->IDFactura->IDEmisorFactura,
+            'NumSerieFactura' => $this->IDFactura->NumSerieFactura,
+            'FechaExpedicionFactura' => VeriFactuDateTimeHelper::formatDate($this->IDFactura->FechaExpedicionFactura),
             'Huella' => $this->Encadenamiento->RegistroAnterior->Huella,
             'FechaHoraHusoGenRegistro' => $this->FechaHoraHusoGenRegistro,
         ];
