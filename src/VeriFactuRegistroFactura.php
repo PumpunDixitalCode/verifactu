@@ -13,14 +13,22 @@ class VeriFactuRegistroFactura
     {
         $this->production = $production;
         if ($production) {
-            $this->wsdl = 'https://prewww2.aeat.es/static_files/common/internet/dep/aplicaciones/es/aeat/tikeV1.0/cont/ws/SistemaFacturacion.wsdl';
+            $this->wsdl = 'https://www2.agenciatributaria.gob.es/static_files/common/internet/dep/aplicaciones/es/aeat/tikeV1.0/cont/ws/SistemaFacturacion.wsdl';
             $this->schemaBaseUrl = 'https://www1.agenciatributaria.gob.es/wlpl/TIKE-CONT/ws/SistemaFacturacion/VerifactuSOAP';
             // ToDo :: Extract the location from the WSDL
-            $this->location = 'https://prewww1.aeat.es/wlpl/TIKE-CONT/ws/SistemaFacturacion/VerifactuSOAP';
+            $this->location = 'https://www1.agenciatributaria.gob.es/wlpl/TIKE-CONT/ws/SistemaFacturacion/VerifactuSOAP';
         } else {
             $this->wsdl = 'https://prewww2.aeat.es/static_files/common/internet/dep/aplicaciones/es/aeat/tikeV1.0/cont/ws/SistemaFacturacion.wsdl';
             $this->schemaBaseUrl = 'https://www2.agenciatributaria.gob.es/static_files/common/internet/dep/aplicaciones/es/aeat/tike/cont/ws/';
             $this->location = 'https://prewww1.aeat.es/wlpl/TIKE-CONT/ws/SistemaFacturacion/VerifactuSOAP';
+        }
+
+        // Local copy of the WSDL + XSDs (incl. xmldsig without DOCTYPE): ext/soap fails to import
+        // the remote xmldsig-core-schema.xsd. The endpoint is set with __setLocation(), so the
+        // WSDL is the same for both environments.
+        $localWsdl = __DIR__ . '/../resources/wsdl/SistemaFacturacion.wsdl';
+        if (is_file($localWsdl)) {
+            $this->wsdl = $localWsdl;
         }
     }
 
@@ -95,6 +103,13 @@ class VeriFactuRegistroFactura
                     $ret['response'] = $response;
                 }
                 $ret['status'] = self::checkResponse($response, $e);
+            } else {
+                // SoapClient could not be created (WSDL/schema/certificate): nothing was sent to AEAT
+                $ret['status'] = [
+                    'error' => true,
+                    'codigo' => 9998,
+                    'message' => 'SoapClient init failed: ' . $e->getMessage(),
+                ];
             }
         }
         return $ret;
